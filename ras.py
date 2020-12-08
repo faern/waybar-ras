@@ -21,7 +21,7 @@ ERROR = "☢️"
 # mc#0csrow#3channel#1    0   0
 
 # Regex capturing the CE and UE counts in the output of ras-mc-ctl --error-count
-line_regex = re.compile(r'^\S+\s+(\d+)\s+(\d+)$')
+ERROR_COUNT_REGEX = r'^\S+\s+(\d+)\s+(\d+)$'
 
 def run_ras():
     result = subprocess.run(["ras-mc-ctl", "--error-count"], capture_output=True, timeout=2)
@@ -34,12 +34,10 @@ def run_ras():
         # Number of corrected and uncorrectable errors detected
         ce_count = 0
         ue_count = 0
-        for line in tooltip.splitlines():
-            match = line_regex.match(line)
-            if match:
-                (ce, ue) = match.groups()
-                ce_count += int(ce)
-                ue_count += int(ue)
+        for match in re.finditer(ERROR_COUNT_REGEX, tooltip, flags=re.MULTILINE):
+            (ce, ue) = match.groups()
+            ce_count += int(ce)
+            ue_count += int(ue)
 
         ce_label = "CE" if ce_count == 0 else f"{ERROR}CE"
         ue_label = "UE" if ue_count == 0 else f"{ERROR}UE"
