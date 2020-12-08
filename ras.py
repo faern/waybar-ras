@@ -20,30 +20,36 @@ ERROR = "☢️"
 # mc#0csrow#3channel#0    0   0
 # mc#0csrow#3channel#1    0   0
 
-# Regex capturing the CE and UE counts in the output of ras-mc-ctl --error-count
-ERROR_COUNT_REGEX = r'^\S+\s+(\d+)\s+(\d+)$'
+RAS_CMD = ["ras-mc-ctl", "--error-count"]
+
+# Regex capturing the CE and UE counts in the output of RAS_CMD
+ERROR_COUNT_REGEX = r"^\S+\s+(\d+)\s+(\d+)$"
+
 
 def run_ras():
-    result = subprocess.run(["ras-mc-ctl", "--error-count"], capture_output=True, timeout=2)
+    result = subprocess.run(RAS_CMD, capture_output=True, timeout=2)
     if result.returncode != 0:
-        text = ERROR
-        tooltip = f"ras-mc-ctl exited with return code {result.returncode}\n{result.stderr.decode()}"
-    else:
-        # Show the entire output as tooltip
-        tooltip = result.stdout.decode()
-        # Number of corrected and uncorrectable errors detected
-        ce_count = 0
-        ue_count = 0
-        for match in re.finditer(ERROR_COUNT_REGEX, tooltip, flags=re.MULTILINE):
-            (ce, ue) = match.groups()
-            ce_count += int(ce)
-            ue_count += int(ue)
+        return (
+            ERROR,
+            f"ras-mc-ctl exited with return code {result.returncode}\n{result.stderr.decode()}",
+        )
 
-        ce_label = "CE" if ce_count == 0 else f"{ERROR}CE"
-        ue_label = "UE" if ue_count == 0 else f"{ERROR}UE"
-        text = f"{ce_label}: {ce_count}, {ue_label}: {ue_count}"
+    # Show the entire output as tooltip
+    tooltip = result.stdout.decode()
+    # Number of corrected and uncorrectable errors detected
+    ce_count = 0
+    ue_count = 0
+    for match in re.finditer(ERROR_COUNT_REGEX, tooltip, flags=re.MULTILINE):
+        (ce, ue) = match.groups()
+        ce_count += int(ce)
+        ue_count += int(ue)
+
+    ce_label = "CE" if ce_count == 0 else f"{ERROR}CE"
+    ue_label = "UE" if ue_count == 0 else f"{ERROR}UE"
+    text = f"{ce_label}: {ce_count}, {ue_label}: {ue_count}"
 
     return (text, tooltip)
+
 
 try:
     (text, tooltip) = run_ras()
